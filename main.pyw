@@ -5,11 +5,7 @@ import mysql.connector as connect
 from datetime import datetime
 
 def mainfn():
-    global ViewMemButton
-    global ViewBookButton
-    global BorrowButton
-    global main
-    global ExitButton
+    global ViewMemButton, ViewBookButton, BorrowButton, ViewReqButton, main, ExitButton
     
     main=Tk()
     main.configure(bg='#D7D7D7')
@@ -29,17 +25,17 @@ def mainfn():
     ViewMemButton.grid(row=0,column=1)
     ViewBookButton=Button(text='View/Edit Book Info',command=booklist,font=('Bahnschrift',14),activebackground='#FFA45D',bg='#FF8F37',height=3,width=20)
     ViewBookButton.grid(row=0,column=3)
-    BorrowButton=Button(text='Borrow/Return Books',command=borrowreturn,wraplength=130,bg='#FF8F37',activebackground='#FFA45D',font=('Bahnschrift',14),height=3,width=14)
-    BorrowButton.place(relx=0.36,rely=0.5,anchor='nw')
+    BorrowButton=Button(text='Borrow/Return Books',command=borrowreturn,bg='#FF8F37',activebackground='#FFA45D',font=('Bahnschrift',14),height=3,width=20)
+    BorrowButton.place(relx=0.077,rely=0.5,anchor='nw')
+    ViewReqButton=Button(text='View Book Requests',command=viewreq,font=('Bahnschrift',14),activebackground='#FFA45D',bg='#FF8F37',height=3,width=20)
+    ViewReqButton.place(relx=0.539,rely=0.5,anchor='nw')
     ExitButton=Button(text='Exit',height=2,width=10,font=('Bahnschrift',11),bg='#FF1B1B',activebackground='#FF3E3E',command=main.destroy)
     ExitButton.place(relx=0.96,rely=0.94,anchor='se')
 
     main.mainloop()
 
 def memberstable():
-        global table
-        global canvas
-        global scrollbar
+        global table, canvas, scrollbar
 
         cursor.execute('select * from members')
         n=len(cursor.fetchall())
@@ -87,9 +83,24 @@ def memberstable():
         canvas.yview_moveto('0.0')
         buffer.destroy()
 
-def back():
+def back(*args):
+    global w
+    
+    try:
+        w.destroy()
+    except:
+        pass
     main.destroy()
     mainfn()
+
+def exitfn(*args):
+    global w
+    
+    try:
+        w.destroy()
+    except:
+        pass
+    main.destroy()
 
 def check():
     global d
@@ -105,17 +116,19 @@ def check():
 def focus_in(*args):
     EditSearch.delete(0,END)
     EditSearch.config(fg='black')
+
+def clock():
+    global clocklabel,clocklabel2
+    
+    now=datetime.now()
+    date=str(now.strftime('%d %b %Y'))
+    time=str(now.strftime('%H:%M:%S'))
+
+    clocklabel.config(text='%s\n%s'%(date,time))
+
+    clocklabel.after(1, clock)
     
 def memberlist():
-
-    def clock():
-        now=datetime.now()
-        date=str(now.strftime('%d %b %Y'))
-        time=str(now.strftime('%H:%M:%S'))
-
-        clocklabel.config(text='%s\n%s'%(date,time))
-
-        clocklabel.after(1, clock)
 
     def widgets():
         global AddButton, EditButton, RemoveButton, clocklabel, clocklabel2
@@ -223,18 +236,8 @@ def memberlist():
         global notfound
         
         try:
-            global result
-            global MemberID_Entry
-            global Name_Entry
-            global DOB_Entry
-            global DOJ_Entry
-            global table
-            global SaveButton
-            global canvas
-            global AddButton
-            global EditButton
-            global RemoveButton
-            global scrollbar
+            global MemberID_Entry, Name_Entry, DOB_Entry, DOJ_Entry
+            global result, table, SaveButton, canvas, AddButton, EditButton, RemoveButton, scrollbar
 
             cursor.execute('select * from members where memberid=%s'%(EditSearch.get()))
             result=cursor.fetchall()
@@ -317,15 +320,7 @@ def memberlist():
         removeback()
 
     def remove():
-        global d
-        global result
-        global BackButton
-        global ConfirmRemoveButton
-        global table
-        global AddButton
-        global RemoveButton
-        global EditButton
-        global canvas
+        global d, result, BackButton, ConfirmRemoveButton, table, AddButton, RemoveButton, EditButton, canvas
 
         try:
             searchback()
@@ -392,13 +387,7 @@ def memberlist():
             i+=1
 
     def add():
-        global Add_Combobox
-        global SaveButton
-        global BackButton
-        global Add_Label
-        global AddButton
-        global EditButton
-        global RemoveButton
+        global Add_Combobox, SaveButton, BackButton, Add_Label, AddButton, EditButton, RemoveButton
 
         try:
             searchback()
@@ -469,6 +458,7 @@ def memberlist():
         ViewBookButton.destroy()
         ViewMemButton.destroy()
         BorrowButton.destroy()
+        ViewReqButton.destroy()
     except:
         pass
     
@@ -483,6 +473,7 @@ def memberlist():
     global BackButton
     
     ExitButton.place(relx=0.97,rely=0.96,anchor='se')
+    ExitButton.config(command=exitfn)
     BackButton=Button(main,text='< Back',height=2,width=10,font=('Bahnschrift',11),bg='#EFB700',activebackground='#EFCA50',command=back)
     BackButton.place(relx=0.84,rely=0.96,anchor='se')
     widgets()
@@ -492,12 +483,12 @@ def bookstable():
     global canvas
     global scrollbar
     
-    cursor.execute('select * from books')
+    cursor.execute('select bookid,bookname,author,pubyear from books')
     n=len(cursor.fetchall())
     if n>9:
         n=9
         
-    canvas=Canvas(main,height=25+23*n,width=595,bg='#D7D7D7',highlightthickness=0)
+    canvas=Canvas(main,height=25+23*n,width=695,bg='#D7D7D7',highlightthickness=0)
     canvas.grid_propagate(False)
     canvas.grid(row=1,column=1)
     scrollbar=ttk.Scrollbar(main,orient=VERTICAL,command=canvas.yview)
@@ -509,23 +500,27 @@ def bookstable():
     table=Canvas(canvas,bg='black',highlightthickness=0)
     canvas.create_window((0,0),window=table)
 
-    buffer=Canvas(main,height=28+22*n,width=595,bg='#D7D7D7',highlightthickness=0)
+    buffer=Canvas(main,height=28+22*n,width=695,bg='#D7D7D7',highlightthickness=0)
     buffer.grid_propagate(False)
     buffer.grid(row=1,column=1)
         
     Label(table,text='BookID',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=1,padx=2,pady=2)
     Label(table,text='BookName',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=2,padx=2,pady=2)
     Label(table,text='Author',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=3,padx=2,pady=2)
-    Label(table,text='PubYear',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=4,padx=2,pady=2)
+    Label(table,text='PubYear',font='Arial 9 bold',height=1,width=16,bg='#F3F3F3').grid(row=0,column=4,padx=2,pady=2)
+    Label(table,text='Copies',font='Arial 9 bold',height=1,width=16,bg='#F3F3F3').grid(row=0,column=5,padx=2,pady=2)
 
     cursor.execute('select * from books')
     i=1
     j=1
     for e in cursor.fetchall():
         for a in e:
-            Label(table,text=a,height=1,width=20,bg='#FFFEF2').grid(row=i,column=j,padx=0.5,pady=0.5)
+            if j in [4,5]:
+                Label(table,text=a,height=1,width=16,bg='#FFFEF2').grid(row=i,column=j,padx=0.5,pady=0.5)
+            else:
+                Label(table,text=a,height=1,width=20,bg='#FFFEF2').grid(row=i,column=j,padx=0.5,pady=0.5)
             j+=1
-            if j%5==0:
+            if j%6==0:
                 i+=1
                 j=1
     try:
@@ -539,10 +534,8 @@ def bookstable():
     
 def booklist():
 
-    def buttons2():
-        global AddButton
-        global EditButton
-        global RemoveButton
+    def widgets2():
+        global AddButton, EditButton, RemoveButton, clocklabel, clocklabel2
         
         AddButton=Button(main,text='Add Record(s)',height=1,width=13,font=('Bahnschrift',11),bg='#6A6A6A',activebackground='#9B9B9B',command=add2)
         AddButton.place(relx=0.785,rely=0.172,anchor='se')
@@ -550,6 +543,10 @@ def booklist():
         EditButton.place(relx=0.62,rely=0.172,anchor='se')
         RemoveButton=Button(main,text='Remove Record(s)',height=1,width=15,font=('Bahnschrift',11),bg='#6A6A6A',activebackground='#9B9B9B',command=remove2)
         RemoveButton.place(relx=0.97,rely=0.172,anchor='se')
+
+        clocklabel=Label(main,width=25,font=('Yu Gothic bold',17),bg='#D7D7D7')
+        clocklabel.place(relx=0.37,rely=0.2,anchor='se')
+        clock()
 
 
     def searchback2():
@@ -586,7 +583,7 @@ def booklist():
         SaveButton.destroy()
         bookstable()
         Label(main,width=25,font=('Bahnschrift',10),bg='#D7D7D7').grid(row=2,column=1)
-        buttons2()
+        widgets2()
     
     def addback2():
         global table
@@ -601,7 +598,7 @@ def booklist():
         Add_Combobox.destroy()
         Label(main,width=25,font=('Bahnschrift',10),bg='#D7D7D7').grid(row=2,column=1)
         bookstable()
-        buttons2()
+        widgets2()
 
     def removeback2():
         global canvas
@@ -612,16 +609,12 @@ def booklist():
         canvas.destroy()
         ConfirmRemoveButton.destroy()
         bookstable()
-        buttons2()
+        widgets2()
 
     def editsave2():
         try:
-            global conn
-            global BookID_Entry
-            global BookName_Entry
-            global Author_Entry
-            global PubYear_Entry
-            global main
+            global BookID_Entry, BookName_Entry, Author_Entry, PubYear_Entry, Copies_Entry
+            global main, conn
 
             for a in result:
                 if BookID_Entry.get()!=a[0]:
@@ -632,6 +625,9 @@ def booklist():
                     cursor.execute('update books set author="%s" where bookid=%s'%(Author_Entry.get(),BookID_Entry.get()))
                 if PubYear_Entry.get()!=a[3]:
                     cursor.execute('update books set pubyear="%s" where bookid=%s'%(PubYear_Entry.get(),BookID_Entry.get()))
+                if Copies_Entry.get()!=a[4]:
+                    cursor.execute('update books set copies=%s where bookid=%s'%(Copies_Entry.get(),BookID_Entry.get()))
+                    
             conn.commit()
             messagebox.showinfo("Library", "Changes saved Successfully")
             editback2()
@@ -643,18 +639,8 @@ def booklist():
         global notfound
         
         try:
-            global result
-            global BookID_Entry
-            global BookName_Entry
-            global Author_Entry
-            global PubYear_Entry
-            global table
-            global SaveButton
-            global canvas
-            global AddButton
-            global EditButton
-            global RemoveButton
-            global scrollbar
+            global BookID_Entry, BookName_Entry, Author_Entry, PubYear_Entry, Copies_Entry
+            global result, table, SaveButton, canvas, AddButton, EditButton, RemoveButton, scrollbar
 
             cursor.execute('select * from books where bookid=%s'%(EditSearch.get()))
             result=cursor.fetchall()
@@ -695,6 +681,7 @@ def booklist():
                 Label(table,text='BookName',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=2,padx=2,pady=2)
                 Label(table,text='Author',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=3,padx=2,pady=2)
                 Label(table,text='PubYear',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=4,padx=2,pady=2)
+                Label(table,text='Copies',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=5,padx=2,pady=2)
                 for a in result:
                     BookID_Entry=Entry(table,width=24)
                     BookID_Entry.insert(0,a[0])
@@ -708,6 +695,10 @@ def booklist():
                     PubYear_Entry=Entry(table,width=24)
                     PubYear_Entry.insert(0,a[3])
                     PubYear_Entry.grid(row=1,column=4,pady=0.5)
+                    Copies_Entry=Entry(table,width=24)
+                    Copies_Entry.insert(0,a[4])
+                    Copies_Entry.grid(row=1,column=5,pady=0.5)
+                    
                 BookID_Entry.focus()
 
                 SaveButton=Button(main,text='Save',command=editsave2,height=1,width=10,bg='#069408',font=('Bahnschrift',10),activebackground='#06C308')
@@ -735,15 +726,7 @@ def booklist():
         removeback2()
 
     def remove2():
-        global d
-        global result
-        global BackButton
-        global ConfirmRemoveButton
-        global table
-        global AddButton
-        global RemoveButton
-        global EditButton
-        global canvas
+        global d, result, BackButton, ConfirmRemoveButton, table, AddButton, RemoveButton, EditButton, canvas
 
         try:
             searchback2()
@@ -759,9 +742,9 @@ def booklist():
         if n>9:
             n=9
         
-        canvas.configure(height=25*(n+1),width=627)
+        canvas.configure(height=25*(n+1),width=720)
 
-        buffer=Canvas(main,height=28+22*n,width=595,bg='#D7D7D7',highlightthickness=0)
+        buffer=Canvas(main,height=28+22*n,width=720,bg='#D7D7D7',highlightthickness=0)
         buffer.grid_propagate(False)
         buffer.grid(row=1,column=1)
         
@@ -802,10 +785,11 @@ def booklist():
         Label(table,text='BookName',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=2,padx=2,pady=2)
         Label(table,text='Author',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=3,padx=2,pady=2)
         Label(table,text='PubYear',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=4,padx=2,pady=2)
+        Label(table,text='Copies',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=5,padx=2,pady=2)
         
         i=1
         for e in range(int(Add_Combobox.get())):
-            for j in range(1,5):
+            for j in range(1,6):
                 Entry(table,width=24).grid(row=i,column=j,pady=0.5)
             i+=1
         
@@ -848,7 +832,11 @@ def booklist():
         c=True
         for e in range(int(Add_Combobox.get())):
             try:
-                cursor.execute('insert into books values(%s,"%s","%s","%s")'%(int((table.grid_slaves(i,1)[0]).get()),(table.grid_slaves(i,2)[0]).get(),(table.grid_slaves(i,3)[0]).get(),(table.grid_slaves(i,4)[0]).get()))
+                cursor.execute('insert into books values(%s,"%s","%s",%s,%s)'%(int((table.grid_slaves(i,1)[0]).get()),(table.grid_slaves(i,2)[0]).get(),(table.grid_slaves(i,3)[0]).get(),int((table.grid_slaves(i,4)[0]).get()),int((table.grid_slaves(i,5)[0]).get())))
+                try:
+                    cursor.execute('delete from requests where bookname="%s" and author="%s"'%(table.grid_slaves(i,2)[0].get(),table.grid_slaves(i,3)[0].get()))
+                except:
+                    pass
                 i+=1
             except:
                 c=False
@@ -886,6 +874,7 @@ def booklist():
         ViewBookButton.destroy()
         ViewMemButton.destroy()
         BorrowButton.destroy()
+        ViewReqButton.destroy()        
     except:
         pass
     
@@ -900,9 +889,10 @@ def booklist():
     global BackButton
     
     ExitButton.place(relx=0.97,rely=0.96,anchor='se')
+    ExitButton.config(command=exitfn)
     BackButton=Button(main,text='< Back',height=2,width=10,font=('Bahnschrift',11),bg='#EFB700',activebackground='#EFCA50',command=back)
     BackButton.place(relx=0.84,rely=0.96,anchor='se')
-    buttons2()
+    widgets2()
     
 def checkpassw(*args):
     global cursor
@@ -918,8 +908,9 @@ def checkpassw(*args):
             cursor.execute('create database Library')
             cursor.execute('use Library')
             cursor.execute('create table members(MemberID int(5) primary key,Name varchar(20),DateOfBirth date,DateOfJoining date)')
-            cursor.execute('create table books(BookID int(7) primary key,BookName varchar(30),Author varchar(20),PubYear int(4))')
+            cursor.execute('create table books(BookID int(7) primary key,BookName varchar(30),Author varchar(20),PubYear int(4),Copies int(2))')
             cursor.execute('create table borrowedbooks(MemberID int(5) primary key,Book1 int(7),Book2 int(7),Book3 int(7))')
+            cursor.execute('create table requests(MemberID int(5),BookName varchar(30),Author varchar(20),Email varchar(30))')
 
             cursor.execute('insert into members values(%s,"%s","%s","%s")'%(10001,'Tom Hanks','2000-01-01','2020-02-02'))
             cursor.execute('insert into members values(%s,"%s","%s","%s")'%(10002,'Porter Robinson','2004-04-08','2019-11-03'))
@@ -927,11 +918,11 @@ def checkpassw(*args):
             cursor.execute('insert into members values(%s,"%s","%s","%s")'%(10004,'Karen Manson','1999-07-25','2021-05-12'))
             cursor.execute('insert into members values(%s,"%s","%s","%s")'%(10005,'Rahul Menon','2005-09-25','2022-04-02'))
 
-            cursor.execute('insert into books values(%s,"%s","%s",%s)'%(1234567,'The Book Thief','Markus Zusak',2005))
-            cursor.execute('insert into books values(%s,"%s","%s",%s)'%(9259987,'And Then There Were None','Agatha Christie',1939))
-            cursor.execute('insert into books values(%s,"%s","%s",%s)'%(1794856,'The Kite Runner','Khaled Hosseini',2003))
-            cursor.execute('insert into books values(%s,"%s","%s",%s)'%(4340938,'1984','George Orwell',1949))
-            cursor.execute('insert into books values(%s,"%s","%s",%s)'%(1228739,'The Maze Runner','James Dashner',2009))
+            cursor.execute('insert into books values(%s,"%s","%s",%s,%s)'%(1234567,'The Book Thief','Markus Zusak',2005,2))
+            cursor.execute('insert into books values(%s,"%s","%s",%s,%s)'%(9259987,'And Then There Were None','Agatha Christie',1939,5))
+            cursor.execute('insert into books values(%s,"%s","%s",%s,%s)'%(1794856,'The Kite Runner','Khaled Hosseini',2003,1))
+            cursor.execute('insert into books values(%s,"%s","%s",%s,%s)'%(4340938,'1984','George Orwell',1949,2))
+            cursor.execute('insert into books values(%s,"%s","%s",%s,%s)'%(1228739,'The Maze Runner','James Dashner',2009,3))
 
             cursor.execute('insert into borrowedbooks(memberid) values(%s)'%(10001))
             cursor.execute('insert into borrowedbooks(memberid) values(%s)'%(10002))
@@ -947,11 +938,10 @@ def checkpassw(*args):
         wrongpass=Label(root,text='Wrong password',bg='#D7D7D7',font=('Bahnschrift',11),fg='red').grid(row=1,column=3)
 
 def borrowreturn():
-    global TopLabel
+    global TopLabel, clocklabel, clocklabel2
     
-    def buttons3():
-        global borrowbutton
-        global returnbutton
+    def widgets3():
+        global borrowbutton, returnbutton
         
         borrowbutton=Button(main,text='Borrow Books',command=borrowbooks,font=('Bahnschrift',11),bg='#6A6A6A',activebackground='#9B9B9B')
         borrowbutton.place(relx=0.3,rely=0.7)
@@ -1016,7 +1006,7 @@ def borrowreturn():
                 TopLabel=Label(main,width=14,text='MemberID:%s'%memid,font=('Bahnschrift',15),bg='#D7D7D7')
                 TopLabel.place(relx=0.62,rely=0.3,anchor='se')
                 borrowtable()
-                buttons3()
+                widgets3()
         except:
             
             Label(main,text='Invalid ID',font=('Bahnschrift',9),bg='#D7D7D7',fg='red').place(relx=0.53,rely=0.21,anchor='se')
@@ -1054,7 +1044,7 @@ def borrowreturn():
         i=1
         for bookid in result[0]:
             if bookid !=None:
-                cursor.execute('select * from books where BookID=%s'%bookid)
+                cursor.execute('select bookid,bookname,author,pubyear from books where BookID=%s'%bookid)
                 j=1
                 for a in cursor.fetchall()[0]:
                     Label(table,text=a,width=20,bg='#FFFEF2').grid(row=i,column=j,padx=0.5,pady=0.5)
@@ -1070,7 +1060,7 @@ def borrowreturn():
         confirmborrowbutton.destroy()
         Label(main,width=30,font=('Bahnschrift',10),bg='#D7D7D7').place(relx=0.69,rely=0.71,anchor='se')
         borrowtable()
-        buttons3()
+        widgets3()
         BackButton.config(command=back)
 
     def returnback():
@@ -1081,7 +1071,7 @@ def borrowreturn():
         table.destroy()
         removebutton.destroy()
         borrowtable()
-        buttons3()
+        widgets3()
         BackButton.config(command=back)
 
     def borrowbooks():
@@ -1113,17 +1103,17 @@ def borrowreturn():
         
         cursor.execute('select book1,book2,book3 from borrowedbooks where memberid=%s'%memid)
         result=cursor.fetchall()[0]
-        cursor.execute('select bookid from books;')
+        cursor.execute('select bookid,copies from books;')
         result2=cursor.fetchall()
         d2={}
         Label(table,bg='#F3F3F3').grid(row=0,column=0,sticky='nsew')
         i=1
         for e in result2:
-            if e[0] not in result:
+            if e[0] not in result and e[1]!=0:
                 Checkbutton(table,bg='#F3F3F3',command=borrowreturncheck).grid(row=i,column=0)
                 chkbtn=table.grid_slaves(row=i,column=0)
                 chkbtn[0].deselect()
-                cursor.execute('select * from books where bookid=%s'%e[0])
+                cursor.execute('select bookid,bookname,author,pubyear from books where bookid=%s'%e[0])
                 j=1
                 for a in cursor.fetchall()[0]:
                     Label(table,text=a,width=20,bg='#FFFEF2').grid(row=i,column=j,padx=0.5,pady=0.5)
@@ -1169,10 +1159,13 @@ def borrowreturn():
                 if result[a]==None:
                     if a==0:
                         cursor.execute('update borrowedbooks set book1=%s where memberid=%s'%(bookid,memid))
+                        cursor.execute('update books set copies=copies-1 where bookid=%s'%(bookid))
                     elif a==1:
                         cursor.execute('update borrowedbooks set book2=%s where memberid=%s'%(bookid,memid))
+                        cursor.execute('update books set copies=copies-1 where bookid=%s'%(bookid))
                     else:
                         cursor.execute('update borrowedbooks set book3=%s where memberid=%s'%(bookid,memid))
+                        cursor.execute('update books set copies=copies-1 where bookid=%s'%(bookid))
                     conn.commit()
                     c=True
                     break
@@ -1185,15 +1178,18 @@ def borrowreturn():
             
     def borrowreturncheck():
         global d2
+        global bookid
         
         x = main.winfo_pointerx()
         y = main.winfo_pointery()
         widget = main.winfo_containing(x,y)
-        row=widget.grid_info()['row']
-        if row in d2:
-            del d2[row]
+        r=widget.grid_info()['row']
+        bookid=(table.grid_slaves(row=r,column=1))[0]['text']
+        
+        if r in d2:
+            del d2[r]
         else:
-            d2[row]=1
+            d2[r]=1
             
     def returnbooks():
         global memid
@@ -1214,8 +1210,8 @@ def borrowreturn():
         result=cursor.fetchall()
         Label(table,bg='#F3F3F3').grid(row=0,column=0,sticky='nsew')
         i=1
-        for bookid in result[0]:
-            if bookid !=None:
+        for b_id in result[0]:
+            if b_id !=None:
                 Checkbutton(table,bg='#F3F3F3',command=borrowreturncheck).grid(row=i,column=0)
                 chkbtn=table.grid_slaves(row=i,column=0)
                 chkbtn[0].deselect()
@@ -1224,21 +1220,115 @@ def borrowreturn():
         removebutton.place(relx=0.44,rely=0.7)
         
     def returnsave():
+        global bookid
+        
         for n in d2:
             if n==1:
                 cursor.execute('update borrowedbooks set book1=null where memberid=%s'%(memid))
+                cursor.execute('update books set copies=copies+1 where bookid=%s'%(bookid))
             elif n==2:
                 cursor.execute('update borrowedbooks set book2=null where memberid=%s'%(memid))
+                cursor.execute('update books set copies=copies+1 where bookid=%s'%(bookid))
             elif n==3:
                 cursor.execute('update borrowedbooks set book3=null where memberid=%s'%(memid))
+                cursor.execute('update books set copies=copies+1 where bookid=%s'%(bookid))
             conn.commit()
         messagebox.showinfo("Library", "Changes saved Successfully")
         returnback()
-    
-    global main
-    global ExitButton
-    global Backbutton
-    global identry
+
+    def request(*args):
+        global RequestButton, SearchButton, w, MemberID_Entry, Book_Entry, Author_Entry, Email_Entry
+        
+        RequestButton.config(state=DISABLED,bg='#9B9B9B')
+        SearchButton.config(state=DISABLED,bg='#9B9B9B')
+        w=Tk()
+        w.grab_set()
+        w.configure(bg='#D7D7D7')
+        w.geometry('400x250')
+        w.title('Book Request')
+        w.eval('tk::PlaceWindow . center')
+        w.resizable(width=False, height=False)
+
+        w.grid_rowconfigure(0,weight=1)
+        w.grid_rowconfigure(3,weight=1)
+        w.grid_columnconfigure(0,weight=1)
+        w.grid_columnconfigure(4,weight=1)
+
+        MemberID_Label=Label(w,text="Enter MemberID:",bg='#D7D7D7',font=('Bahnschrift',15)).place(relx=0.4,rely=0.2,anchor='se')
+        MemberID_Entry=Entry(w)
+        MemberID_Entry.place(relx=0.5,rely=0.11)
+        Book_Label=Label(w,text="Enter Book Name:",bg='#D7D7D7',font=('Bahnschrift',15)).place(relx=0.426,rely=0.348,anchor='se')
+        Book_Entry=Entry(w)
+        Book_Entry.place(relx=0.5,rely=0.26)
+        Author_Label=Label(w,text="Enter Author Name:",bg='#D7D7D7',font=('Bahnschrift',15)).place(relx=0.465,rely=0.498,anchor='se')
+        Author_Entry=Entry(w)
+        Author_Entry.place(relx=0.5,rely=0.41)
+        Email_Label=Label(w,text="Enter Email to get notified:",bg='#D7D7D7',font=('Bahnschrift',12)).place(relx=0.498,rely=0.649,anchor='se')
+        Email_Entry=Entry(w)
+        Email_Entry.place(relx=0.5,rely=0.56)
+        Label(w,text='(Optional)',bg='#D7D7D7',font=('Bahnschrift',8)).place(relx=0.725,rely=0.73,anchor='se')
+
+        ConfirmButton=Button(w,text='Confirm',bg='#069408',font=('Bahnschrift',12),activebackground='#06C308',command=saverequest)
+        ConfirmButton.place(relx=0.59,rely=0.95,anchor='se')
+        
+        w.bind('<Return>',saverequest)
+        w.protocol("WM_DELETE_WINDOW", closew)
+
+    def closew():
+        global w, RequestButton, SearchButton
+        w.destroy()
+        RequestButton.config(state=ACTIVE,bg='#6A6A6A')
+        SearchButton.config(state=ACTIVE,bg='#6A6A6A')
+        
+
+    def closem():
+        global w
+        global main
+
+        try:
+            w.destroy()
+        except:
+            pass
+        
+        main.destroy()
+            
+    def saverequest(*args):
+        global w, MemberID_Entry, Book_Entry, Author_Entry, Email_Entry
+
+        if Email_Entry.get()=='':
+            email='null'
+        else:
+            email=Email_Entry.get()
+
+        cursor.execute('select memberid from members')
+
+        result=cursor.fetchall()
+        try:
+            MemberID=int(MemberID_Entry.get())
+            if (MemberID,) in result:
+                if Book_Entry.get()=='':
+                    Label(w,width=20,bg='#D7D7D7').place(relx=0.28,rely=0.025)
+                    Error=Label(w,text='Book Name cannot be blank',font=('Bahnschrift',10),fg='red',bg='#D7D7D7').place(relx=0.28,rely=0.025)
+                    
+                elif Author_Entry.get()=='':
+                    Label(w,width=20,bg='#D7D7D7').place(relx=0.28,rely=0.025)
+                    Error=Label(w,text='Author Name cannot be blank',font=('Bahnschrift',10),fg='red',bg='#D7D7D7').place(relx=0.28,rely=0.025)
+
+                else:
+                    cursor.execute('insert into requests values(%s,"%s","%s","%s")'%(MemberID,Book_Entry.get(),Author_Entry.get(),email))
+                    conn.commit()
+                    ty=Label(w,text='Thank you',font=('Bahnschrift',25),height=6,width=21,bg='#D7D7D7')
+                    ty.place(relx=0,rely=0)
+                    ty.after(1500,closew)
+                
+            else:
+                Label(w,width=50,bg='#D7D7D7').place(relx=0.28,rely=0.025)
+                Error=Label(w,text='Enter a valid ID',font=('Bahnschrift',10),fg='red',bg='#D7D7D7').place(relx=0.38,rely=0.025)
+        except:
+            Label(w,width=20,bg='#D7D7D7').place(relx=0.28,rely=0.025)
+            Error=Label(w,text='Enter a valid ID',font=('Bahnschrift',10),fg='red',bg='#D7D7D7').place(relx=0.38,rely=0.025)
+        
+    global main, ExitButton, Backbutton, identry, SearchButton
 
     main.destroy()
     
@@ -1254,23 +1344,168 @@ def borrowreturn():
     main.grid_columnconfigure(0,weight=1)
     main.grid_columnconfigure(4,weight=1)
 
-    Label(main,text='Enter MemberID:',font=('Bahnschrift',10),bg='#D7D7D7').place(relx=0.395,rely=0.163,anchor='se')
+    clocklabel=Label(main,width=25,font=('Yu Gothic bold',16),bg='#D7D7D7')
+    clocklabel.place(relx=0.38,rely=0.2,anchor='se')
+    clock()
+
+    Label(main,text='Enter MemberID:',font=('Bahnschrift',10),bg='#D7D7D7').place(relx=0.43,rely=0.163,anchor='se')
     identry=Entry(main,fg='grey')
-    identry.place(relx=0.585,rely=0.16,anchor='se')
+    identry.place(relx=0.62,rely=0.16,anchor='se')
     identry.insert(0,'eg:10001')
     SearchButton=Button(text='Search',height=1,width=9,font=('Bahnschrift',10),bg='#6A6A6A',activebackground='#9B9B9B',command=idsearch)
-    SearchButton.place(relx=0.705,rely=0.17,anchor='se')
+    SearchButton.place(relx=0.74,rely=0.17,anchor='se')
     identry.bind('<FocusIn>',focus)
     identry.bind('<Return>',idsearch)
 
-    global BackButton
+    global BackButton, RequestButton, ExitButton
 
-    ExitButton=Button(text='Exit',height=2,width=10,font=('Bahnschrift',11),bg='#FF1B1B',activebackground='#FF3E3E',command=main.destroy)
+    ExitButton=Button(text='Exit',height=2,width=10,font=('Bahnschrift',11),bg='#FF1B1B',activebackground='#FF3E3E',command=exitfn)
     ExitButton.place(relx=0.97,rely=0.96,anchor='se')
     BackButton=Button(main,text='< Back',height=2,width=10,font=('Bahnschrift',11),bg='#EFB700',activebackground='#EFCA50',command=back)
     BackButton.place(relx=0.825,rely=0.96,anchor='se')
+    RequestButton=Button(text='Request A Book',height=2,width=18,font=('Bahnschrift',11),bg='#6A6A6A',activebackground='#9B9B9B',command=request)
+    RequestButton.place(relx=0.3,rely=0.96,anchor='se')
+
+    main.protocol("WM_DELETE_WINDOW", closem)
 
     main.mainloop()
+
+def requeststable():
+    global BackButton, RemoveButton, canvas, table, scrollbar
+    
+    RemoveButton=Button(main,text='Remove Record(s)',height=1,width=15,font=('Bahnschrift',11),bg='#6A6A6A',activebackground='#9B9B9B',command=removereq)
+    RemoveButton.place(relx=0.97,rely=0.172,anchor='se')
+
+    cursor.execute('select * from requests')
+    n=len(cursor.fetchall())
+    if n>9:
+        n=9
+    
+    canvas=Canvas(main,height=25+23*n,width=595,bg='#D7D7D7',highlightthickness=0)
+    canvas.grid_propagate(False)
+    canvas.grid(row=1,column=1)
+    scrollbar=ttk.Scrollbar(main,orient=VERTICAL,command=canvas.yview)
+    scrollbar.grid(row=1,column=2,sticky='nsw')
+
+    canvas.configure(yscrollcommand=scrollbar.set)
+    canvas.bind('<Configure>',lambda e:canvas.configure(scrollregion=canvas.bbox('all')))
+
+    table=Canvas(canvas,bg='black',highlightthickness=0)
+    canvas.create_window((0,0),window=table)
+    
+    cursor.execute('select * from requests')
+
+    buffer=Canvas(main,height=25+23*n,width=595,bg='#D7D7D7',highlightthickness=0)
+    buffer.grid_propagate(False)
+    buffer.grid(row=1,column=1)
+
+    Label(table,text='MemberID',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=1,padx=2,pady=2)
+    Label(table,text='Book Name',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=2,padx=2,pady=2)
+    Label(table,text='Author',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=3,padx=2,pady=2)
+    Label(table,text='Email',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=4,padx=2,pady=2)
+
+    i=1
+    j=1
+    for e in cursor.fetchall():
+        for a in e:
+            if a=='null':
+                a=''
+            Label(table,text=a,height=1,width=20,bg='#FFFEF2').grid(row=i,column=j,padx=0.5,pady=0.5)
+            j+=1
+            if j%5==0:
+                i+=1
+                j=1
+    try:
+        BackButton.config(command=back)
+    except:
+        pass
+    
+    canvas.update_idletasks()
+    canvas.yview_moveto('0.0')
+    buffer.destroy()    
+
+def removereq():
+    global d, result, BackButton, ConfirmRemoveButton, table, RemoveButton, canvas
+
+    RemoveButton.destroy()
+    
+    cursor.execute('select * from requests')
+    n=len(cursor.fetchall())
+    if n>9:
+        n=9
+    
+    canvas.configure(height=25*(n+1),width=627)
+
+    buffer=Canvas(main,height=28+22*n,width=627,bg='#D7D7D7',highlightthickness=0)
+    buffer.grid_propagate(False)
+    buffer.grid(row=1,column=1)
+    
+    d={}
+    i=1
+    cursor.execute('select * from requests')
+    result=cursor.fetchall()
+    Label(table,bg='#F3F3F3').grid(row=0,column=0,sticky='nsew')
+    for a in result:
+        Checkbutton(table,bg='#F3F3F3',command=check).grid(row=i,column=0)
+        chkbtn=table.grid_slaves(row=i,column=0)
+        chkbtn[0].deselect()
+        i+=1
+
+    canvas.update_idletasks()
+    buffer.destroy()
+    canvas.yview_moveto('0.0')
+    
+    ConfirmRemoveButton=Button(main,text='Remove',command=confirmremove3,height=1,width=10,bg='#069408',font=('Bahnschrift',10),activebackground='#06C308')
+    ConfirmRemoveButton.grid(row=3,column=1)
+    BackButton.config(command=removeback3)
+
+def confirmremove3():
+        cursor.execute('select * from requests')
+        result=cursor.fetchall()
+        for n in d:
+            cursor.execute('delete from requests where memberid=%s and bookname="%s"'%(result[n-1][0],result[n-1][1]))
+            conn.commit()
+        messagebox.showinfo("Library", "Changes saved Successfully")
+        removeback3()
+
+def removeback3():
+        global canvas
+        global ConfirmRemoveButton
+        global scrollbar
+
+        scrollbar.destroy()
+        canvas.destroy()
+        ConfirmRemoveButton.destroy()
+        requeststable()
+        BackButton.config(command=back)
+
+def viewreq():
+    try:
+        ViewBookButton.destroy()
+        ViewMemButton.destroy()
+        BorrowButton.destroy()
+        ViewReqButton.destroy()        
+    except:
+        pass
+
+    global main, table, canvas, scrollbar, BackButton
+
+    main.geometry('800x500')
+    main.grid_columnconfigure(4,weight=0)
+    main.eval('tk::PlaceWindow . center')
+    main.resizable(False,False)
+
+    ExitButton.place(relx=0.97,rely=0.96,anchor='se')
+    ExitButton.config(command=exitfn)
+    BackButton=Button(main,text='< Back',height=2,width=10,font=('Bahnschrift',11),bg='#EFB700',activebackground='#EFCA50',command=back)
+    BackButton.place(relx=0.84,rely=0.96,anchor='se')
+    
+    cursor.execute('select * from requests')
+    if len(cursor.fetchall())!=0:
+        requeststable()
+    else:
+        Label(text='No requests present',font=('Bahnschrift',25),bg='#D7D7D7').place(relx=0.68,rely=0.5,anchor='se')
+        
 
 root=Tk()
 root.configure(bg='#D7D7D7')
