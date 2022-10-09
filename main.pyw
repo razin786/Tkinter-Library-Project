@@ -122,6 +122,11 @@ def focus_in(*args):
     EditSearch.delete(0,END)
     EditSearch.config(fg='black')
 
+
+def focus(*args):
+    identry.delete(0,END)
+    identry.config(fg='black')
+
 def clock():
     global clocklabel
     
@@ -154,20 +159,7 @@ def memberlist():
         clock()
 
     def searchback():
-        global EditButton
-        global EditSearch
-        global SearchButton
-        global EditLabel
-        global BackButton
-
-        try:
-            errorlabel.destroy()
-        except:
-            pass
-        try:
-            notfound.destroy()
-        except:
-            pass
+        global EditButton, EditSearch, SearchButton, EditLabel, BackButton
         
         EditLabel.destroy()
         EditButton.destroy()
@@ -189,11 +181,7 @@ def memberlist():
         widgets()
     
     def addback():
-        global table
-        global SaveButton
-        global scrollbar
-        global Add_Label
-        global Add_Combobox
+        global table, SaveButton, scrollbar, Add_Label, Add_Combobox
 
         table.destroy()
         SaveButton.destroy()
@@ -207,6 +195,15 @@ def memberlist():
         global ConfirmRemoveButton
         global scrollbar
 
+        try:
+            SearchLabel.destroy()
+            identry.destroy()
+            SearchButton.destroy()
+        except:
+            pass
+        
+        BackButton.config(command=back)
+
         scrollbar.destroy()
         canvas.destroy()
         ConfirmRemoveButton.destroy()
@@ -215,12 +212,8 @@ def memberlist():
 
     def editsave():
         try:
-            global conn
-            global MemberID_Entry
-            global Name_Entry
-            global DOB_Entry
-            global DOJ_Entry
-            global main
+            global MemberID_Entry, Name_Entry, DOB_Entry, DOJ_Entry
+            global conn, main
 
             for a in result:
                 if MemberID_Entry.get()!=a[0]:
@@ -297,26 +290,98 @@ def memberlist():
             EditSearch.select_range(0,END)
 
     def confirmremove():
-        cursor.execute('select * from members')
-        result=cursor.fetchall()
+        global result
+    
         for n in d:
             cursor.execute('delete from members where memberid=%s'%(result[n-1][0]))
             cursor.execute('delete from borrowedbooks where memberid=%s'%(result[n-1][0]))
             conn.commit()
         messagebox.showinfo("Library", "Changes saved Successfully")
-        removeback()
+
+        try:
+            SearchLabel.destroy()
+            identry.destroy()
+            SearchButton.destroy()
+        except:
+            pass
+
+        ConfirmRemoveButton.destroy()
+        remove()
+
+    def removesearch(*args):
+        try:
+            global result, table, canvas, scrollbar, SearchLabel, identry, SearchButton, BackButton
+
+            cursor.execute('select * from members where memberid=%s'%(identry.get()))
+            result=cursor.fetchall()
+            if result==[]:
+                errormsg=Label(main,text='Record not found',font=('Bahnschrift',8),bg='#D7D7D7',fg='red')
+                errormsg.place(relx=0.53,rely=0.21,anchor='se')
+                errormsg.after(1200,errormsg.destroy)
+            else:
+                SearchLabel.destroy()
+                identry.destroy()
+                SearchButton.destroy()
+                BackButton.config(command=remove)
+                
+                canvas.destroy()
+                scrollbar.destroy()
+                canvas=Canvas(main,height=206,width=595,bg='#D7D7D7',highlightthickness=0)
+                canvas.grid(row=1,column=1)
+                table=Canvas(canvas,bg='black',highlightthickness=0)
+                table.grid()
+                Label(table,text='MemberID',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=1,padx=2,pady=2)
+                Label(table,text='Name',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=2,padx=2,pady=2)
+                Label(table,text='Date of Birth',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=3,padx=2,pady=2)
+                Label(table,text='Date of Joining',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=4,padx=2,pady=2)       
+
+                j=1
+                for e in result:
+                    Checkbutton(table,bg='#F3F3F3',command=check).grid(row=1,column=0)
+                    chkbtn=table.grid_slaves(row=1,column=0)
+                    chkbtn[0].deselect()
+                    for a in e:
+                        Label(table,text=a,height=1,width=20,bg='#FFFEF2').grid(row=1,column=j,padx=0.5,pady=0.5)
+                        j+=1
+                Label(table,bg='#F3F3F3').grid(row=0,column=0,sticky='nsew')
+                            
+                canvas.update_idletasks()
+                canvas.yview_moveto('0.0')                
+        except:
+            errormsg=Label(main,text='Enter a valid ID',width=15,font=('Bahnschrift',8),bg='#D7D7D7',fg='red')
+            errormsg.place(relx=0.53,rely=0.21,anchor='se')
+            errormsg.after(1200,errormsg.destroy)
+
 
     def remove():
-        global d, result, BackButton, ConfirmRemoveButton, table, AddButton, RemoveButton, EditButton, canvas
+        global d, result, BackButton, ConfirmRemoveButton, table, AddButton, RemoveButton, EditButton, canvas, identry, SearchButton, SearchLabel
+        global table2, scrollbar2, canvas2
 
         try:
             searchback()
         except:
             pass
 
+        try:
+            canvas.destroy()
+            table.destroy()
+            memberstable()
+        except:
+            pass
+
         AddButton.destroy()
         RemoveButton.destroy()
         EditButton.destroy()
+
+        SearchLabel=Label(main,text='Enter MemberID:',font=('Bahnschrift',10),bg='#D7D7D7')
+        SearchLabel.place(relx=0.43,rely=0.163,anchor='se')
+        identry=Entry(main,fg='grey')
+        identry.place(relx=0.585,rely=0.16,anchor='se')
+        identry.insert(0,'eg:10001')
+        SearchButton=Button(text='Search',height=1,width=9,font=('Bahnschrift',10),bg='#6A6A6A',activebackground='#9B9B9B',command=removesearch)
+        SearchButton.place(relx=0.685,rely=0.17,anchor='se')
+        identry.bind('<FocusIn>',focus)
+        identry.bind('<Return>',removesearch)
 
         cursor.execute('select * from members')
         n=len(cursor.fetchall())
@@ -532,11 +597,7 @@ def booklist():
 
 
     def searchback2():
-        global EditButton
-        global EditSearch
-        global SearchButton
-        global EditLabel
-        global BackButton
+        global EditButton, EditSearch, SearchButton, EditLabel, BackButton
         
         EditLabel.destroy()
         EditButton.destroy()
@@ -575,6 +636,15 @@ def booklist():
         global canvas
         global ConfirmRemoveButton
         global scrollbar
+
+        try:
+            SearchLabel.destroy()
+            identry.destroy()
+            SearchButton.destroy()
+        except:
+            pass
+        
+        BackButton.config(command=back)
 
         scrollbar.destroy()
         canvas.destroy()
@@ -668,25 +738,105 @@ def booklist():
             EditSearch.select_range(0,END)
 
     def confirmremove2():
-        cursor.execute('select * from books')
-        result=cursor.fetchall()
+        global result
+        
         for n in d:
+            da=result[n-1][0]
+            print(da)
             cursor.execute('delete from books where bookid=%s'%(result[n-1][0]))
+            cursor.execute('update borrowedbooks set book1=null,date1=null where book1=%s'%(result[n-1][0]))
+            cursor.execute('update borrowedbooks set book2=null,date2=null where book2=%s'%(result[n-1][0]))
+            cursor.execute('update borrowedbooks set book3=null,date3=null where book3=%s'%(result[n-1][0]))
             conn.commit()
         messagebox.showinfo("Library", "Changes saved Successfully")
-        removeback2()
+
+        try:
+            SearchLabel.destroy()
+            identry.destroy()
+            SearchButton.destroy()
+        except:
+            pass
+
+        ConfirmRemoveButton.destroy()
+        remove2()
+
+    def removesearch2(*args):
+        try:
+            global result, table, canvas, scrollbar, SearchLabel, identry, SearchButton, BackButton
+
+            searchterm=identry.get()+'%'
+            cursor.execute('select bookid,bookname,author,pubyear from books where bookname like "%s"'%(searchterm))
+            result=cursor.fetchall()
+            if result==[]:
+                errormsg=Label(main,text='No results found',font=('Bahnschrift',8),bg='#D7D7D7',fg='red')
+                errormsg.place(relx=0.53,rely=0.21,anchor='se')
+                errormsg.after(1200,errormsg.destroy)
+            else:
+                SearchLabel.destroy()
+                identry.destroy()
+                SearchButton.destroy()
+                BackButton.config(command=remove2)
+                
+                canvas.destroy()
+                canvas=Canvas(main,height=206,width=595,bg='#D7D7D7',highlightthickness=0)
+                canvas.grid(row=1,column=1)
+                table=Canvas(canvas,bg='black',highlightthickness=0)
+                table.grid()
+                Label(table,text='BookID',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=1,padx=2,pady=2)
+                Label(table,text='BookName',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=2,padx=2,pady=2)
+                Label(table,text='Author',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=3,padx=2,pady=2)
+                Label(table,text='PubYear',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=4,padx=2,pady=2)
+        
+                Label(table,bg='#F3F3F3').grid(row=0,column=0,sticky='nsew')
+
+                i=1
+                j=1
+                for e in result:
+                    Checkbutton(table,bg='#F3F3F3',command=check).grid(row=i,column=0)
+                    chkbtn=table.grid_slaves(row=i,column=0)
+                    chkbtn[0].deselect()
+                    for a in e:
+                        Label(table,text=a,height=1,width=20,bg='#FFFEF2').grid(row=i,column=j,padx=0.5,pady=0.5)
+                        j+=1
+                        if j%5==0:
+                            i+=1
+                            j=1
+                            
+                canvas.update_idletasks()
+                canvas.yview_moveto('0.0')                
+        except:
+            errormsg=Label(main,text='No results found',width=15,font=('Bahnschrift',8),bg='#D7D7D7',fg='red')
+            errormsg.place(relx=0.53,rely=0.21,anchor='se')
+            errormsg.after(1200,errormsg.destroy)
 
     def remove2():
-        global d, result, BackButton, ConfirmRemoveButton, table, AddButton, RemoveButton, EditButton, canvas
+        global d, result, BackButton, ConfirmRemoveButton, table, AddButton, RemoveButton, EditButton, canvas, identry, SearchButton, SearchLabel
 
         try:
             searchback2()
         except:
             pass
 
+        try:
+            canvas.destroy()
+            table.destroy()
+            bookstable()
+        except:
+            pass
+
         AddButton.destroy()
         RemoveButton.destroy()
         EditButton.destroy()
+
+        SearchLabel=Label(main,text='Enter Book Name:',font=('Bahnschrift',10),bg='#D7D7D7')
+        SearchLabel.place(relx=0.43,rely=0.163,anchor='se')
+        identry=Entry(main,fg='grey')
+        identry.place(relx=0.585,rely=0.16,anchor='se')
+        identry.insert(0,'eg:10001')
+        SearchButton=Button(text='Search',height=1,width=9,font=('Bahnschrift',10),bg='#6A6A6A',activebackground='#9B9B9B',command=removesearch2)
+        SearchButton.place(relx=0.685,rely=0.17,anchor='se')
+        identry.bind('<FocusIn>',focus)
+        identry.bind('<Return>',removesearch2)
         
         cursor.execute('select * from books')
         n=len(cursor.fetchall())
@@ -882,8 +1032,8 @@ def checkpassw(*args):
         mainfn()
     except:
         wrongpass=Label(root,text='Wrong password',bg='#D7D7D7',font=('Bahnschrift',11),fg='red')
-        wrongpass.grid(row=1,column=3)
-        wrongpass.after(1200,wrongpass.destroy)
+        wrongpass.grid(row=2,column=2)
+        wrongpass.after(2500,wrongpass.destroy)
 
 def borrowreturn():
     global TopLabel, clocklabel, clocklabel2
@@ -895,10 +1045,6 @@ def borrowreturn():
         borrowbutton.place(relx=0.35,rely=0.7)
         returnbutton=Button(main,text='Return Books',command=returnbooks,font=('Bahnschrift',11),bg='#6A6A6A',activebackground='#9B9B9B')
         returnbutton.place(relx=0.51,rely=0.7)
-        
-    def focus(*args):
-         identry.delete(0,END)
-         identry.config(fg='black')
 
     def idsearch(*args):
         global identry, memid, borrowbutton, returnbutton, removebutton, table, confirmremovebutton, TopLabel
@@ -981,12 +1127,12 @@ def borrowreturn():
         Label(table,text='Return Date',font='Arial 9 bold',height=1,width=20,bg='#F3F3F3').grid(row=0,column=5,padx=2,pady=2)
 
         cursor.execute('select book1,book2,book3 from borrowedbooks where memberid=%s'%(memid))
-        result=cursor.fetchall()
+        result=cursor.fetchall()[0]
         sdate=str(datetime.today())
         TotalLateFee=0
 
         i=1
-        for bookid in result[0]:
+        for bookid in result:
             if bookid !=None:
                 if i==1:
                     cursor.execute('select datediff("%s",date1) from borrowedbooks where memberid=%s'%(sdate,memid))
