@@ -791,7 +791,7 @@ def booklist():
                 errormsg.after(1200,errormsg.destroy)
             else:
                 SearchLabel.destroy()
-                identry.destroy()
+                identry2.destroy()
                 SearchButton.destroy()
                 BackButton.config(command=remove2)
                 
@@ -850,7 +850,7 @@ def booklist():
         SearchLabel.place(relx=0.43,rely=0.163,anchor='se')
         identry2=Entry(main,fg='grey')
         identry2.place(relx=0.585,rely=0.16,anchor='se')
-        identry2.insert(0,'eg:1989')
+        identry2.insert(0,'eg:1984')
         SearchButton=Button(text='Search',height=1,width=9,font=('Bahnschrift',10),bg='#6A6A6A',activebackground='#9B9B9B',command=removesearch2)
         SearchButton.place(relx=0.685,rely=0.17,anchor='se')
         identry2.bind('<FocusIn>',focus2)
